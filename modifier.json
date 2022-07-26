@@ -1,0 +1,26 @@
+{
+    "fifo.Group": {
+        "scope": [
+            "request",
+            "response"
+        ],
+        "modifiers": [
+            {
+                "reverseproxycdn.request.Modifier": {
+                    "scope": [
+                        "request"
+                    ],
+                    "base_domain": "local.host"
+                }
+            },
+            {
+                "reverseproxycdn.response.Modifier": {
+                    "scope": [
+                        "response"
+                    ],
+                    "base_domain": "local.host"
+                }
+            }
+        ]
+    }
+}

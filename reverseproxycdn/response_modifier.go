@@ -3,6 +3,7 @@ package reverseproxycdn
 import (
 	"encoding/json"
 	"net/http"
+	"strings"
 
 	"github.com/google/martian/v3/parse"
 	reqresprewriter "github.com/zckevin/reverse-proxy-cdn/reqresp-rewriter"
@@ -22,6 +23,10 @@ type ResponseModifierJSON struct {
 }
 
 func (m *ResponseModifier) ModifyResponse(resp *http.Response) error {
+	// bypass for surfly.io's bootstrap static js scripts
+	if strings.HasPrefix(resp.Request.Host, "local.host") {
+		return nil
+	}
 	if err := m.rewriter.RewriteHTTPResponse(resp); err != nil {
 		return err
 	}

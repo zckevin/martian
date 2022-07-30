@@ -60,6 +60,13 @@ func SetLevel(l int) {
 	level = l
 }
 
+func GetLevel() int {
+	lock.Lock()
+	defer lock.Unlock()
+
+	return level
+}
+
 // Infof logs an info message.
 func Infof(format string, args ...interface{}) {
 	currLogger.Infof(format, args...)

@@ -212,6 +212,7 @@ import (
 	"github.com/google/martian/v3/fifo"
 	"github.com/google/martian/v3/har"
 	"github.com/google/martian/v3/httpspec"
+	mlog "github.com/google/martian/v3/log"
 	"github.com/google/martian/v3/marbl"
 	"github.com/google/martian/v3/martianhttp"
 	"github.com/google/martian/v3/martianlog"
@@ -403,6 +404,9 @@ func main() {
 
 	logger := martianlog.NewLogger()
 	logger.SetDecode(true)
+	if mlog.GetLevel() < mlog.Debug {
+		logger.SetHeadersOnly(true)
+	}
 
 	stack.AddRequestModifier(logger)
 	stack.AddResponseModifier(logger)

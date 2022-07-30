@@ -3,8 +3,8 @@ package reverseproxycdn
 import (
 	"encoding/json"
 	"net/http"
-	"strings"
 
+	"github.com/google/martian/v3"
 	"github.com/google/martian/v3/parse"
 	reqresprewriter "github.com/zckevin/reverse-proxy-cdn/reqresp-rewriter"
 )
@@ -23,10 +23,28 @@ type requestModifierJSON struct {
 }
 
 func (m *RequestModifier) ModifyRequest(req *http.Request) error {
-	// bypass for surfly.io's bootstrap static js scripts
-	if strings.HasPrefix(req.Host, "local.host") {
+	// just leave CONNECT request alone
+	if req.Method == "CONNECT" {
 		return nil
 	}
+
+	resp, err := m.rewriter.HijackHTTPRequest(req)
+	if err != nil {
+		return err
+	}
+	if resp != nil {
+		ctx := martian.NewContext(req)
+		_, brw, err := ctx.Session().Hijack()
+		if err != nil {
+			return err
+		}
+		err = resp.Write(brw)
+		if err != nil {
+			return err
+		}
+		return brw.Flush()
+	}
+
 	if err := m.rewriter.RewriteHTTPRequest(req); err != nil {
 		return err
 	}

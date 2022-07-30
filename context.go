@@ -18,7 +18,6 @@ import (
 	"bufio"
 	"crypto/rand"
 	"encoding/hex"
-	"fmt"
 	"net"
 	"net/http"
 	"sync"
@@ -131,7 +130,13 @@ func (s *Session) Hijack() (net.Conn, *bufio.ReadWriter, error) {
 	defer s.mu.Unlock()
 
 	if s.hijacked {
-		return nil, nil, fmt.Errorf("martian: session has already been hijacked")
+		// return nil, nil, fmt.Errorf("martian: session has already been hijacked")
+
+		// reverseproxycdn:
+		//   do not return error for already hijacked Session,
+		//   we need s.brw to rewrite response,
+		//   especially for http/1.1 keep alived conns.
+		return s.conn, s.brw, nil
 	}
 	s.hijacked = true
 

@@ -197,6 +197,7 @@ import (
 	"log"
 	"net"
 	"net/http"
+	_ "net/http/pprof"
 	"net/url"
 	"os"
 	"os/signal"
@@ -253,6 +254,7 @@ var (
 	skipTLSVerify      = flag.Bool("skip-tls-verify", false, "skip TLS server verification; insecure")
 	dsProxyURL         = flag.String("downstream-proxy-url", "", "URL of downstream proxy")
 	modifierConfigFile = flag.String("modifier-config-file", "", "Config file path of modifiers")
+	pprofEnabled       = flag.Bool("pprof", false, "Enable pprof")
 )
 
 func main() {
@@ -342,6 +344,14 @@ func main() {
 		}
 
 		go p.Serve(tls.NewListener(tl, mc.TLS()))
+	}
+
+	if *pprofEnabled {
+		go func() {
+			// mux := http.NewServeMux()
+			// mux.HandleFunc("/trace", pprof.Trace)
+			log.Fatal(http.ListenAndServe("localhost:10086", nil))
+		}()
 	}
 
 	stack, fg := httpspec.NewStack("martian")

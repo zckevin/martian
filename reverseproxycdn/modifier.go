@@ -11,9 +11,13 @@ import (
 	"github.com/google/martian/v3"
 	"github.com/google/martian/v3/parse"
 	"github.com/google/martian/v3/verify"
+	config "github.com/zckevin/reverse-proxy-cdn/config"
+	reqresprewriter "github.com/zckevin/reverse-proxy-cdn/reqresp-rewriter"
 )
 
 var noop = martian.Noop("martianhttp.Modifier")
+
+var rewriter = reqresprewriter.NewReqrespRewriterFromViperConfig(config.GetConfig())
 
 // Modifier is a locking modifier that is configured via http.Handler.
 type Modifier struct {

@@ -18,8 +18,7 @@ type RequestModifier struct {
 }
 
 type requestModifierJSON struct {
-	BaseDomain string               `json:"base_domain"`
-	Scope      []parse.ModifierType `json:"scope"`
+	Scope []parse.ModifierType `json:"scope"`
 }
 
 func (m *RequestModifier) ModifyRequest(req *http.Request) error {
@@ -58,7 +57,7 @@ func requestModifierFromJSON(b []byte) (*parse.Result, error) {
 	}
 
 	mod := &RequestModifier{
-		rewriter: reqresprewriter.NewReqrespRewriterFromBaseDomain(msg.BaseDomain),
+		rewriter: rewriter,
 	}
 	return parse.NewResult(mod, msg.Scope)
 }

@@ -18,8 +18,7 @@ type ResponseModifier struct {
 }
 
 type ResponseModifierJSON struct {
-	BaseDomain string               `json:"base_domain"`
-	Scope      []parse.ModifierType `json:"scope"`
+	Scope []parse.ModifierType `json:"scope"`
 }
 
 func (m *ResponseModifier) ModifyResponse(resp *http.Response) error {
@@ -40,7 +39,7 @@ func responseModifierFromJSON(b []byte) (*parse.Result, error) {
 	}
 
 	modifier := &ResponseModifier{
-		rewriter: reqresprewriter.NewReqrespRewriterFromBaseDomain(msg.BaseDomain),
+		rewriter: rewriter,
 	}
 	return parse.NewResult(modifier, msg.Scope)
 }

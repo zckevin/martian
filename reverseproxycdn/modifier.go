@@ -11,13 +11,12 @@ import (
 	"github.com/google/martian/v3"
 	"github.com/google/martian/v3/parse"
 	"github.com/google/martian/v3/verify"
-	config "github.com/zckevin/reverse-proxy-cdn/config"
+	"github.com/zckevin/reverse-proxy-cdn/config"
 	reqresprewriter "github.com/zckevin/reverse-proxy-cdn/reqresp-rewriter"
 )
 
 var noop = martian.Noop("martianhttp.Modifier")
-
-var rewriter = reqresprewriter.NewReqrespRewriterFromViperConfig(config.GetConfig())
+var rewriter reqresprewriter.ReqrespRewriter
 
 // Modifier is a locking modifier that is configured via http.Handler.
 type Modifier struct {
@@ -28,9 +27,10 @@ type Modifier struct {
 }
 
 // NewModifier returns a new martianhttp.Modifier.
-func NewModifier(configFilePath string) *Modifier {
+func NewModifier(modifierConfigFile, reverseProxyCdnConfigDir string) *Modifier {
 	m := &Modifier{}
-	m.init(configFilePath)
+	m.init(modifierConfigFile)
+	rewriter = reqresprewriter.NewReqrespRewriterFromViperConfig(config.GetConfig(reverseProxyCdnConfigDir))
 	return m
 }
 

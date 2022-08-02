@@ -231,7 +231,6 @@ import (
 	_ "github.com/google/martian/v3/port"
 	_ "github.com/google/martian/v3/priority"
 	_ "github.com/google/martian/v3/querystring"
-	_ "github.com/google/martian/v3/reverseproxycdn"
 	_ "github.com/google/martian/v3/skip"
 	_ "github.com/google/martian/v3/stash"
 	_ "github.com/google/martian/v3/static"
@@ -239,23 +238,27 @@ import (
 )
 
 var (
-	addr               = flag.String("addr", ":8080", "host:port of the proxy")
-	apiAddr            = flag.String("api-addr", ":8181", "host:port of the configuration API")
-	tlsAddr            = flag.String("tls-addr", ":4443", "host:port of the proxy over TLS")
-	api                = flag.String("api", "martian.proxy", "hostname for the API")
-	generateCA         = flag.Bool("generate-ca-cert", false, "generate CA certificate and private key for MITM")
-	cert               = flag.String("cert", "", "filepath to the CA certificate used to sign MITM certificates")
-	key                = flag.String("key", "", "filepath to the private key of the CA used to sign MITM certificates")
-	organization       = flag.String("organization", "Martian Proxy", "organization name for MITM certificates")
-	validity           = flag.Duration("validity", time.Hour, "window of time that MITM certificates are valid")
-	allowCORS          = flag.Bool("cors", false, "allow CORS requests to configure the proxy")
-	harLogging         = flag.Bool("har", false, "enable HAR logging API")
-	marblLogging       = flag.Bool("marbl", false, "enable MARBL logging API")
-	trafficShaping     = flag.Bool("traffic-shaping", false, "enable traffic shaping API")
-	skipTLSVerify      = flag.Bool("skip-tls-verify", false, "skip TLS server verification; insecure")
-	dsProxyURL         = flag.String("downstream-proxy-url", "", "URL of downstream proxy")
-	modifierConfigFile = flag.String("modifier-config-file", "", "Config file path of modifiers")
-	pprofEnabled       = flag.Bool("pprof", false, "Enable pprof")
+	addr           = flag.String("addr", ":8080", "host:port of the proxy")
+	apiAddr        = flag.String("api-addr", ":8181", "host:port of the configuration API")
+	tlsAddr        = flag.String("tls-addr", ":4443", "host:port of the proxy over TLS")
+	api            = flag.String("api", "martian.proxy", "hostname for the API")
+	generateCA     = flag.Bool("generate-ca-cert", false, "generate CA certificate and private key for MITM")
+	cert           = flag.String("cert", "", "filepath to the CA certificate used to sign MITM certificates")
+	key            = flag.String("key", "", "filepath to the private key of the CA used to sign MITM certificates")
+	organization   = flag.String("organization", "Martian Proxy", "organization name for MITM certificates")
+	validity       = flag.Duration("validity", time.Hour, "window of time that MITM certificates are valid")
+	allowCORS      = flag.Bool("cors", false, "allow CORS requests to configure the proxy")
+	harLogging     = flag.Bool("har", false, "enable HAR logging API")
+	marblLogging   = flag.Bool("marbl", false, "enable MARBL logging API")
+	trafficShaping = flag.Bool("traffic-shaping", false, "enable traffic shaping API")
+	skipTLSVerify  = flag.Bool("skip-tls-verify", false, "skip TLS server verification; insecure")
+	dsProxyURL     = flag.String("downstream-proxy-url", "", "URL of downstream proxy")
+
+	modifierConfigFile       = flag.String("modifier-config-file", "", "Config file path of modifiers")
+	reverseProxyCdnConfigDir = flag.String("reverseproxycdn-config-dir", "", "Config file search dir of reverseproxycdn")
+	pprofEnabled             = flag.Bool("pprof", false, "Enable pprof")
+	wprArchiveFile           = flag.String("wpr-archive-file", "", "Archive file for wpr replay")
+	wprInjectScripts         = flag.String("wpr-inject-scripts", "", "Inject javascript files for wpr replay")
 )
 
 func main() {
@@ -277,18 +280,23 @@ func main() {
 
 	log.Printf("martian: starting proxy on %s and api on %s", l.Addr().String(), lAPI.Addr().String())
 
-	tr := &http.Transport{
-		Dial: (&net.Dialer{
-			Timeout:   30 * time.Second,
-			KeepAlive: 30 * time.Second,
-		}).Dial,
-		TLSHandshakeTimeout:   10 * time.Second,
-		ExpectContinueTimeout: time.Second,
-		TLSClientConfig: &tls.Config{
-			InsecureSkipVerify: *skipTLSVerify,
-		},
+	if *wprArchiveFile != "" && *wprInjectScripts != "" {
+		wprReplay := reverseproxycdn.NewWprReplay(*wprArchiveFile, *wprInjectScripts)
+		p.SetRoundTripper(wprReplay)
+	} else {
+		tr := &http.Transport{
+			Dial: (&net.Dialer{
+				Timeout:   30 * time.Second,
+				KeepAlive: 30 * time.Second,
+			}).Dial,
+			TLSHandshakeTimeout:   10 * time.Second,
+			ExpectContinueTimeout: time.Second,
+			TLSClientConfig: &tls.Config{
+				InsecureSkipVerify: *skipTLSVerify,
+			},
+		}
+		p.SetRoundTripper(tr)
 	}
-	p.SetRoundTripper(tr)
 
 	if *dsProxyURL != "" {
 		u, err := url.Parse(*dsProxyURL)
@@ -383,7 +391,7 @@ func main() {
 	p.SetRequestModifier(topg)
 	p.SetResponseModifier(topg)
 
-	m := reverseproxycdn.NewModifier(*modifierConfigFile)
+	m := reverseproxycdn.NewModifier(*modifierConfigFile, *reverseProxyCdnConfigDir)
 	fg.AddRequestModifier(m)
 	fg.AddResponseModifier(m)
 

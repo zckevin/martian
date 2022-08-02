@@ -6,16 +6,13 @@ import (
 	"strings"
 
 	"github.com/google/martian/v3/parse"
-	reqresprewriter "github.com/zckevin/reverse-proxy-cdn/reqresp-rewriter"
 )
 
 func init() {
 	parse.Register("reverseproxycdn.response.Modifier", responseModifierFromJSON)
 }
 
-type ResponseModifier struct {
-	rewriter reqresprewriter.ReqrespRewriter
-}
+type ResponseModifier struct{}
 
 type ResponseModifierJSON struct {
 	Scope []parse.ModifierType `json:"scope"`
@@ -26,7 +23,7 @@ func (m *ResponseModifier) ModifyResponse(resp *http.Response) error {
 	if strings.HasPrefix(resp.Request.Host, "local.host") {
 		return nil
 	}
-	if err := m.rewriter.RewriteHTTPResponse(resp); err != nil {
+	if err := rewriter.RewriteHTTPResponse(resp); err != nil {
 		return err
 	}
 	return nil
@@ -38,8 +35,6 @@ func responseModifierFromJSON(b []byte) (*parse.Result, error) {
 		return nil, err
 	}
 
-	modifier := &ResponseModifier{
-		rewriter: rewriter,
-	}
+	modifier := &ResponseModifier{}
 	return parse.NewResult(modifier, msg.Scope)
 }
